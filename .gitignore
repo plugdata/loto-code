@@ -44,3 +44,7 @@ Thumbs.db
 # Upload folders (if any)
 uploads/
 public/uploads/
+
+# Agent and invalid files
+.claude/
+nul
