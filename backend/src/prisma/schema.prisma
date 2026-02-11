@@ -1,0 +1,253 @@
+generator client {
+  provider = "prisma-client-js"
+  engineType = "library"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(cuid())
+  username    String   @unique
+  password    String
+  displayName String?
+  phone       String   @default("")
+  lineId      String   @default("") @map("line_id")
+  role        String   @default("customer")
+  status      String   @default("offline")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  purchases          Purchase[] 
+  userCoupons        UserCoupon[]
+  percentAllocations PercentAllocation[]
+  keepIds            KeepId[]
+
+  @@map("users")
+}
+
+model Customer {
+  id         String   @id @default(cuid())
+  name       String?
+  phone      String   @default("")
+  status     String?
+  balance    Float?
+  percentage Float?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  restrictedProducts RestrictedProduct[]
+  keepIds            KeepId[]
+
+  @@map("customers")
+}
+
+model Product {
+  id        String   @id @default(cuid())
+  name      String
+  stock     Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  purchaseLimits PurchaseLimit[]
+  purchaseItems  PurchaseItem[]
+
+  @@map("products")
+}
+
+model Coupon {
+  id         String   @id @default(cuid())
+  couponId   String   @unique @map("coupon_id")
+  value      Float
+  expiryDate DateTime @map("expiry_date")
+  status     String   @default("unused")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  purchases   Purchase[]
+  userCoupons UserCoupon[]
+
+  @@map("coupons")
+}
+
+model Purchase {
+  id                 String   @id @default(cuid())
+  userId             String   @map("user_id")
+  totalAmount        Float?   @map("total_amount")
+  percentageDiscount Float?   @map("percentage_discount")
+  couponId           String?  @map("coupon_id")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  user          User           @relation(fields: [userId], references: [id])
+  coupon        Coupon?        @relation(fields: [couponId], references: [id])
+  purchaseItems PurchaseItem[]
+
+  @@map("purchases")
+}
+
+model PurchaseItem {
+  id         String   @id @default(cuid())
+  purchaseId String   @map("purchase_id")
+  productId  String   @map("product_id")
+  quantity   Int?
+  price      Float?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  purchase Purchase @relation(fields: [purchaseId], references: [id])
+  product  Product  @relation(fields: [productId], references: [id])
+
+  @@map("purchase_items")
+}
+
+model PurchaseLimit {
+  id          String   @id @default(cuid())
+  productId   String   @map("product_id")
+  maxQuantity Int?     @map("max_quantity")
+  budgetLimit Float?   @map("budget_limit")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("purchase_limits")
+}
+
+model PercentAllocation {
+  id              String   @id @default(cuid())
+  userId          String   @map("user_id")
+  percentage      Float?
+  thresholdAmount Float?   @map("threshold_amount")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("percent_allocations")
+}
+
+model RestrictedProduct {
+  id          String   @id @default(cuid())
+  customerId  String   @map("customer_id")
+  productName String?  @map("product_name")
+  productCode String?  @map("product_code")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  customer Customer @relation(fields: [customerId], references: [id])
+
+  @@map("restricted_products")
+}
+
+model UserCoupon {
+  id       String   @id @default(cuid())
+  userId   String   @map("user_id")
+  couponId String   @map("coupon_id")
+  status   String   @default("unused")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id])
+  coupon Coupon @relation(fields: [couponId], references: [id])
+
+  @@map("user_coupons")
+}
+
+model KeepId {
+  id         String   @id @default(cuid())
+  userId     String   @map("user_id")
+  customerId String   @map("customer_id")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user     User     @relation(fields: [userId], references: [id])
+  customer Customer @relation(fields: [customerId], references: [id])
+
+  @@map("keep_id")
+}
+
+// ===== Lotto System Models =====
+
+model Transaction {
+  id           Int      @id @default(autoincrement())
+  betTypeCode  String   @map("bet_type_code")
+  betTypeLabel String   @map("bet_type_label")
+  number       String
+  amount       Float
+  customerId   Int?     @map("customer_id")
+  customerName String   @default("ลูกค้าทั่วไป") @map("customer_name")
+  userId       Int?     @map("user_id")
+  userName     String   @default("ADMIN") @map("user_name")
+  roundId      Int?     @map("round_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  round LotteryRound? @relation(fields: [roundId], references: [id])
+
+  @@map("transactions")
+}
+
+model Setting {
+  key   String @id
+  value String
+
+  @@map("settings")
+}
+
+model RestrictedNumber {
+  id        Int      @id @default(autoincrement())
+  number    String
+  maxAmount Int      @default(0) @map("max_amount")
+  type      String   @default("2ตัว")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("restricted_numbers")
+}
+
+model BetType {
+  id        Int    @id @default(autoincrement())
+  key       String @unique
+  code      String @unique
+  label     String
+  shortcut  String
+  category  String
+  sortOrder Int    @map("sort_order")
+
+  @@map("bet_types")
+}
+
+model LotteryType {
+  id        Int      @id @default(autoincrement())
+  name      String
+  code      String   @unique
+  isOpen    Boolean  @default(true) @map("is_open")
+  openTime  String   @default("06:00") @map("open_time")
+  closeTime String   @default("14:30") @map("close_time")
+  icon      String?
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  rounds LotteryRound[]
+
+  @@map("lottery_types")
+}
+
+model LotteryRound {
+  id            Int      @id @default(autoincrement())
+  roundNumber   Int      @default(0) @map("round_number")
+  roundDate     DateTime @map("round_date")
+  lotteryTypeId Int      @map("lottery_type_id")
+  status        String   @default("open") // open, closed, completed
+  note          String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  lotteryType  LotteryType   @relation(fields: [lotteryTypeId], references: [id])
+  transactions Transaction[]
+
+  @@unique([roundDate, lotteryTypeId])
+  @@map("lottery_rounds")
+}
