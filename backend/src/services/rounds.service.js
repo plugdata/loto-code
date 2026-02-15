@@ -158,7 +158,13 @@ export const roundsService = {
 
   // อัปเดตงวด (เปลี่ยน status, note)
   async update(id, data) {
-    const existing = await prisma.lotteryRound.findUnique({ where: { id } });
+    const existing = await prisma.lotteryRound.findUnique({
+      where: { id },
+      include: {
+        lotteryType: { select: { id: true, name: true } },
+        _count: { select: { transactions: true } },
+      },
+    });
     if (!existing) {
       const error = new Error(`Round #${id} not found`);
       error.status = 404;
@@ -170,6 +176,23 @@ export const roundsService = {
     if (data.note !== undefined) updateData.note = data.note;
     if (data.roundDate !== undefined) updateData.roundDate = new Date(data.roundDate);
 
+    // บันทึก log เมื่อปิดงวด
+    if (data.status === 'closed' && existing.status === 'open') {
+      await prisma.roundLog.create({
+        data: {
+          action: 'closed',
+          roundId: existing.id,
+          roundNumber: existing.roundNumber,
+          roundDate: existing.roundDate,
+          lotteryTypeId: existing.lotteryTypeId,
+          lotteryTypeName: existing.lotteryType?.name || '-',
+          status: 'closed',
+          txCount: existing._count?.transactions || 0,
+          note: existing.note,
+        },
+      });
+    }
+
     return prisma.lotteryRound.update({
       where: { id },
       data: updateData,
@@ -179,11 +202,14 @@ export const roundsService = {
     });
   },
 
-  // ลบงวด
+  // ลบงวด (บันทึก log ก่อนลบ)
   async remove(id) {
     const existing = await prisma.lotteryRound.findUnique({
       where: { id },
-      include: { _count: { select: { transactions: true } } },
+      include: {
+        lotteryType: { select: { id: true, name: true } },
+        _count: { select: { transactions: true } },
+      },
     });
     if (!existing) {
       const error = new Error(`Round #${id} not found`);
@@ -195,6 +221,21 @@ export const roundsService = {
       error.status = 400;
       throw error;
     }
+
+    // บันทึก log ก่อนลบ
+    await prisma.roundLog.create({
+      data: {
+        action: 'deleted',
+        roundId: existing.id,
+        roundNumber: existing.roundNumber,
+        roundDate: existing.roundDate,
+        lotteryTypeId: existing.lotteryTypeId,
+        lotteryTypeName: existing.lotteryType?.name || '-',
+        status: existing.status,
+        txCount: 0,
+        note: existing.note,
+      },
+    });
 
     return prisma.lotteryRound.delete({ where: { id } });
   },

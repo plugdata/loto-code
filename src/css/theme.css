@@ -1524,6 +1524,26 @@ body {
   margin-bottom: 8px;
 }
 
+.lottery-type-round-info {
+  font-size: 0.78rem;
+  color: var(--color-primary);
+  font-weight: 600;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: var(--color-primary-subtle, rgba(33, 115, 70, 0.08));
+  border-radius: var(--radius-sm, 6px);
+}
+
+.lottery-type-round-info.no-round {
+  color: var(--color-danger);
+  background: rgba(239, 83, 80, 0.08);
+  font-weight: 600;
+}
+
 .lottery-type-time {
   font-size: 0.8rem;
   color: var(--text-muted);

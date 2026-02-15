@@ -7,10 +7,11 @@ const settings = new Hono();
 
 settings.use('*', authMiddleware);
 
-// GET /api/settings
+// GET /api/settings?lotteryTypeId=1
 settings.get('/', requirePerm('settings.read'), async (c) => {
   try {
-    const data = await settingsService.getAll();
+    const lotteryTypeId = c.req.query('lotteryTypeId') || null;
+    const data = await settingsService.getAll(lotteryTypeId);
     return c.json({ success: true, data });
   } catch (err) {
     return c.json({ success: false, message: err.message }, err.status || 500);

@@ -10,6 +10,9 @@
     "build": "vite build",
     "morkup": "seed.js"
   },
+  "prisma": {
+    "schema": "backend/src/prisma/schema.prisma"
+  },
   "devDependencies": {
     "@hono/node-server": "^1.13.8",
     "better-sqlite3": "^11.8.1",
@@ -29,6 +32,7 @@
     "jsonwebtoken": "^9.0.3",
     "nodemon": "^3.1.11",
     "prisma": "^5.22.0",
-    "swagger": "^0.7.5"
+    "swagger": "^0.7.5",
+    "sweetalert2": "^11.26.18"
   }
 }

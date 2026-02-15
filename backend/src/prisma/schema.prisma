@@ -20,10 +20,11 @@ model User {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  purchases          Purchase[] 
-  userCoupons        UserCoupon[]
-  percentAllocations PercentAllocation[]
-  keepIds            KeepId[]
+  // --- Unused relations (ไม่มี frontend เรียกใช้) ---
+  // purchases          Purchase[]
+  // userCoupons        UserCoupon[]
+  // percentAllocations PercentAllocation[]
+  // keepIds            KeepId[]
 
   @@map("users")
 }
@@ -38,136 +39,122 @@ model Customer {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  restrictedProducts RestrictedProduct[]
-  keepIds            KeepId[]
+  // --- Unused relations (ไม่มี frontend เรียกใช้) ---
+  // restrictedProducts RestrictedProduct[]
+  // keepIds            KeepId[]
 
   @@map("customers")
 }
 
-model Product {
-  id        String   @id @default(cuid())
-  name      String
-  stock     Int
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+// ===== Unused Models (ไม่มี frontend เรียกใช้ — ระบบ shop/purchase เก่า) =====
+// ดูรายละเอียดใน doc-code-api.md > PART 2
 
-  purchaseLimits PurchaseLimit[]
-  purchaseItems  PurchaseItem[]
+// model Product {
+//   id        String   @id @default(cuid())
+//   name      String
+//   stock     Int
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt
+//   purchaseLimits PurchaseLimit[]
+//   purchaseItems  PurchaseItem[]
+//   @@map("products")
+// }
 
-  @@map("products")
-}
+// model Coupon {
+//   id         String   @id @default(cuid())
+//   couponId   String   @unique @map("coupon_id")
+//   value      Float
+//   expiryDate DateTime @map("expiry_date")
+//   status     String   @default("unused")
+//   createdAt  DateTime @default(now())
+//   updatedAt  DateTime @updatedAt
+//   purchases   Purchase[]
+//   userCoupons UserCoupon[]
+//   @@map("coupons")
+// }
 
-model Coupon {
-  id         String   @id @default(cuid())
-  couponId   String   @unique @map("coupon_id")
-  value      Float
-  expiryDate DateTime @map("expiry_date")
-  status     String   @default("unused")
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+// model Purchase {
+//   id                 String   @id @default(cuid())
+//   userId             String   @map("user_id")
+//   totalAmount        Float?   @map("total_amount")
+//   percentageDiscount Float?   @map("percentage_discount")
+//   couponId           String?  @map("coupon_id")
+//   createdAt          DateTime @default(now())
+//   updatedAt          DateTime @updatedAt
+//   user          User           @relation(fields: [userId], references: [id])
+//   coupon        Coupon?        @relation(fields: [couponId], references: [id])
+//   purchaseItems PurchaseItem[]
+//   @@map("purchases")
+// }
 
-  purchases   Purchase[]
-  userCoupons UserCoupon[]
+// model PurchaseItem {
+//   id         String   @id @default(cuid())
+//   purchaseId String   @map("purchase_id")
+//   productId  String   @map("product_id")
+//   quantity   Int?
+//   price      Float?
+//   createdAt  DateTime @default(now())
+//   updatedAt  DateTime @updatedAt
+//   purchase Purchase @relation(fields: [purchaseId], references: [id])
+//   product  Product  @relation(fields: [productId], references: [id])
+//   @@map("purchase_items")
+// }
 
-  @@map("coupons")
-}
+// model PurchaseLimit {
+//   id          String   @id @default(cuid())
+//   productId   String   @map("product_id")
+//   maxQuantity Int?     @map("max_quantity")
+//   budgetLimit Float?   @map("budget_limit")
+//   createdAt   DateTime @default(now())
+//   updatedAt   DateTime @updatedAt
+//   product Product @relation(fields: [productId], references: [id])
+//   @@map("purchase_limits")
+// }
 
-model Purchase {
-  id                 String   @id @default(cuid())
-  userId             String   @map("user_id")
-  totalAmount        Float?   @map("total_amount")
-  percentageDiscount Float?   @map("percentage_discount")
-  couponId           String?  @map("coupon_id")
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+// model PercentAllocation {
+//   id              String   @id @default(cuid())
+//   userId          String   @map("user_id")
+//   percentage      Float?
+//   thresholdAmount Float?   @map("threshold_amount")
+//   createdAt       DateTime @default(now())
+//   updatedAt       DateTime @updatedAt
+//   user User @relation(fields: [userId], references: [id])
+//   @@map("percent_allocations")
+// }
 
-  user          User           @relation(fields: [userId], references: [id])
-  coupon        Coupon?        @relation(fields: [couponId], references: [id])
-  purchaseItems PurchaseItem[]
+// model RestrictedProduct {
+//   id          String   @id @default(cuid())
+//   customerId  String   @map("customer_id")
+//   productName String?  @map("product_name")
+//   productCode String?  @map("product_code")
+//   createdAt   DateTime @default(now())
+//   updatedAt   DateTime @updatedAt
+//   customer Customer @relation(fields: [customerId], references: [id])
+//   @@map("restricted_products")
+// }
 
-  @@map("purchases")
-}
+// model UserCoupon {
+//   id       String   @id @default(cuid())
+//   userId   String   @map("user_id")
+//   couponId String   @map("coupon_id")
+//   status   String   @default("unused")
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt
+//   user   User   @relation(fields: [userId], references: [id])
+//   coupon Coupon @relation(fields: [couponId], references: [id])
+//   @@map("user_coupons")
+// }
 
-model PurchaseItem {
-  id         String   @id @default(cuid())
-  purchaseId String   @map("purchase_id")
-  productId  String   @map("product_id")
-  quantity   Int?
-  price      Float?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  purchase Purchase @relation(fields: [purchaseId], references: [id])
-  product  Product  @relation(fields: [productId], references: [id])
-
-  @@map("purchase_items")
-}
-
-model PurchaseLimit {
-  id          String   @id @default(cuid())
-  productId   String   @map("product_id")
-  maxQuantity Int?     @map("max_quantity")
-  budgetLimit Float?   @map("budget_limit")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  product Product @relation(fields: [productId], references: [id])
-
-  @@map("purchase_limits")
-}
-
-model PercentAllocation {
-  id              String   @id @default(cuid())
-  userId          String   @map("user_id")
-  percentage      Float?
-  thresholdAmount Float?   @map("threshold_amount")
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id])
-
-  @@map("percent_allocations")
-}
-
-model RestrictedProduct {
-  id          String   @id @default(cuid())
-  customerId  String   @map("customer_id")
-  productName String?  @map("product_name")
-  productCode String?  @map("product_code")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  customer Customer @relation(fields: [customerId], references: [id])
-
-  @@map("restricted_products")
-}
-
-model UserCoupon {
-  id       String   @id @default(cuid())
-  userId   String   @map("user_id")
-  couponId String   @map("coupon_id")
-  status   String   @default("unused")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user   User   @relation(fields: [userId], references: [id])
-  coupon Coupon @relation(fields: [couponId], references: [id])
-
-  @@map("user_coupons")
-}
-
-model KeepId {
-  id         String   @id @default(cuid())
-  userId     String   @map("user_id")
-  customerId String   @map("customer_id")
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  user     User     @relation(fields: [userId], references: [id])
-  customer Customer @relation(fields: [customerId], references: [id])
-
-  @@map("keep_id")
-}
+// model KeepId {
+//   id         String   @id @default(cuid())
+//   userId     String   @map("user_id")
+//   customerId String   @map("customer_id")
+//   createdAt  DateTime @default(now())
+//   updatedAt  DateTime @updatedAt
+//   user     User     @relation(fields: [userId], references: [id])
+//   customer Customer @relation(fields: [customerId], references: [id])
+//   @@map("keep_id")
+// }
 
 // ===== Lotto System Models =====
 
@@ -197,11 +184,15 @@ model Setting {
 }
 
 model RestrictedNumber {
-  id        Int      @id @default(autoincrement())
-  number    String
-  maxAmount Int      @default(0) @map("max_amount")
-  type      String   @default("2ตัว")
-  createdAt DateTime @default(now()) @map("created_at")
+  id            Int      @id @default(autoincrement())
+  number        String
+  maxAmount     Int      @default(0) @map("max_amount")
+  payRate       Float?   @map("pay_rate")
+  type          String   @default("2ตัว")
+  lotteryTypeId Int?     @map("lottery_type_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  lotteryType LotteryType? @relation(fields: [lotteryTypeId], references: [id], onDelete: SetNull)
 
   @@map("restricted_numbers")
 }
@@ -230,9 +221,25 @@ model LotteryType {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  rounds LotteryRound[]
+  rounds            LotteryRound[]
+  logs              LotteryTypeLog[]
+  restrictedNumbers RestrictedNumber[]
 
   @@map("lottery_types")
+}
+
+model LotteryTypeLog {
+  id            Int      @id @default(autoincrement())
+  lotteryTypeId Int      @map("lottery_type_id")
+  field         String   // "openTime" or "closeTime"
+  oldValue      String   @map("old_value")
+  newValue      String   @map("new_value")
+  changedByName String   @map("changed_by_name")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  lotteryType LotteryType @relation(fields: [lotteryTypeId], references: [id], onDelete: Cascade)
+
+  @@map("lottery_type_logs")
 }
 
 model LotteryRound {
@@ -250,4 +257,20 @@ model LotteryRound {
 
   @@unique([roundDate, lotteryTypeId])
   @@map("lottery_rounds")
+}
+
+model RoundLog {
+  id              Int      @id @default(autoincrement())
+  action          String   // "closed", "deleted"
+  roundId         Int      @map("round_id")
+  roundNumber     Int      @map("round_number")
+  roundDate       DateTime @map("round_date")
+  lotteryTypeId   Int      @map("lottery_type_id")
+  lotteryTypeName String   @map("lottery_type_name")
+  status          String
+  txCount         Int      @default(0) @map("tx_count")
+  note            String?
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("round_logs")
 }

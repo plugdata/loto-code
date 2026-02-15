@@ -7,10 +7,11 @@ const restricted = new Hono();
 
 restricted.use('*', authMiddleware);
 
-// GET /api/restricted
+// GET /api/restricted?lotteryTypeId=X
 restricted.get('/', requirePerm('numbers.read'), async (c) => {
   try {
-    const data = await restrictedService.findAll();
+    const lotteryTypeId = c.req.query('lotteryTypeId');
+    const data = await restrictedService.findAll(lotteryTypeId);
     return c.json({ success: true, data });
   } catch (err) {
     return c.json({ success: false, message: err.message }, err.status || 500);
@@ -28,7 +29,18 @@ restricted.post('/', requirePerm('numbers.create'), async (c) => {
   }
 });
 
-// DELETE /api/restricted/:number
+// DELETE /api/restricted/id/:id — delete by ID
+restricted.delete('/id/:id', requirePerm('numbers.delete'), async (c) => {
+  try {
+    const id = parseInt(c.req.param('id'));
+    const data = await restrictedService.removeById(id);
+    return c.json({ success: true, data });
+  } catch (err) {
+    return c.json({ success: false, message: err.message }, err.status || 500);
+  }
+});
+
+// DELETE /api/restricted/:number — delete by number (legacy)
 restricted.delete('/:number', requirePerm('numbers.delete'), async (c) => {
   try {
     const number = c.req.param('number');
@@ -39,11 +51,13 @@ restricted.delete('/:number', requirePerm('numbers.delete'), async (c) => {
   }
 });
 
-// GET /api/restricted/check/:number
+// GET /api/restricted/check/:number?lotteryTypeId=X
 restricted.get('/check/:number', requirePerm('numbers.read'), async (c) => {
   try {
     const number = c.req.param('number');
-    const result = await restrictedService.checkNumber(number);
+    const lotteryTypeId = c.req.query('lotteryTypeId');
+    const type = c.req.query('type');
+    const result = await restrictedService.checkNumber(number, lotteryTypeId, type);
     return c.json({ success: true, ...result });
   } catch (err) {
     return c.json({ success: false, message: err.message }, err.status || 500);

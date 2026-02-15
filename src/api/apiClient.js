@@ -51,8 +51,12 @@ export const api = {
    * @see {@link http://localhost:3001/api/settings GET /api/settings}
    */
   settings: {
-    /** @returns {Promise<{payRate2Digit: number, payRate3Digit: number, isLotteryOpen: boolean, closingTime: string, ...}>} Settings object */
-    get: () => request('/settings'),
+    /** @param {number} [lotteryTypeId] - Filter rates/limits by lottery type
+     * @returns {Promise<{payRate2Digit: number, payRate3Digit: number, isLotteryOpen: boolean, closingTime: string, ...}>} Settings object */
+    get: (lotteryTypeId) => {
+      const params = lotteryTypeId ? `?lotteryTypeId=${lotteryTypeId}` : '';
+      return request(`/settings${params}`);
+    },
     /** @param {Object} updates - Settings to update
      * @param {boolean} [updates.isLotteryOpen] - Whether lottery is open
      * @param {string} [updates.closingTime] - Closing time (e.g., '14:30')
@@ -100,20 +104,27 @@ export const api = {
    * @see {@link http://localhost:3001/api/restricted GET /api/restricted}
    */
   restricted: {
-    /** @returns {Promise<Array<{number: string, maxAmount: number, type: string}>>} Array of restricted numbers */
-    get: () => request('/restricted'),
-    /** @param {Object} num - Restricted number data
-     * @param {string} num.number - Number to restrict
-     * @param {number} [num.maxAmount] - Maximum bet amount
-     * @param {string} [num.type] - Type ('2ตัว' or '3ตัว')
-     */
+    /** @param {number} [lotteryTypeId] - Filter by lottery type */
+    get: (lotteryTypeId) => {
+      const params = lotteryTypeId ? `?lotteryTypeId=${lotteryTypeId}` : '';
+      return request(`/restricted${params}`);
+    },
+    /** @param {Object} num - Restricted number data */
     add: (num) => request('/restricted', { method: 'POST', body: num }),
-    /** @param {string} number - Number to remove from restricted list */
+    /** @param {number} id - Record ID to remove */
+    removeById: (id) => request(`/restricted/id/${id}`, { method: 'DELETE' }),
+    /** @param {string} number - Number to remove (legacy) */
     remove: (number) => request(`/restricted/${encodeURIComponent(number)}`, { method: 'DELETE' }),
     /** @param {string} number - Number to check
-     * @returns {Promise<{restricted: boolean, data: Object|null}>} Check result
+     * @param {number} [lotteryTypeId] - Check within lottery type
      */
-    check: (number) => request(`/restricted/check/${encodeURIComponent(number)}`),
+    check: (number, lotteryTypeId, type) => {
+      const params = new URLSearchParams();
+      if (lotteryTypeId) params.set('lotteryTypeId', lotteryTypeId);
+      if (type) params.set('type', type);
+      const qs = params.toString();
+      return request(`/restricted/check/${encodeURIComponent(number)}${qs ? '?' + qs : ''}`);
+    },
   },
 
   /**
@@ -184,6 +195,7 @@ export const api = {
     add: (data) => request('/lottery-types', { method: 'POST', body: data }),
     update: (id, data) => request(`/lottery-types/${id}`, { method: 'PATCH', body: data }),
     delete: (id) => request(`/lottery-types/${id}`, { method: 'DELETE' }),
+    getLogs: (id) => request(`/lottery-types/${id}/logs`),
   },
 
   /**

@@ -1,0 +1,1483 @@
+openapi: 3.0.3
+info:
+  title: Loto Key System API
+  description: |
+    ระบบหวยออนไลน์ - Hono Backend API
+
+    **Authentication:** JWT Cookie (httpOnly) — ส่ง `credentials: 'include'` ทุก request
+
+    **Response Format:**
+    - Success: `{ success: true, data: {...} }`
+    - Error: `{ success: false, message: "error message" }`
+  version: 1.0.0
+  contact:
+    name: Loto Key System
+
+servers:
+  - url: http://localhost:3001/api
+    description: Local Development Server
+
+tags:
+  - name: Auth
+    description: การยืนยันตัวตน (Public)
+  - name: Settings
+    description: ตั้งค่าระบบ (Protected - settings.read/write)
+  - name: Transactions
+    description: รายการแทงหวย (Protected - numbers.*)
+  - name: Restricted
+    description: หวยอั้น - เลขจำกัด (Protected - numbers.*)
+  - name: BetTypes
+    description: ประเภทแทง (Protected - numbers.read)
+  - name: Summary
+    description: สรุปยอด (Protected - numbers.read)
+  - name: Customers
+    description: จัดการลูกค้า (Protected - numbers.*)
+  - name: Users
+    description: จัดการผู้ใช้ (Protected - users.*)
+  - name: LotteryTypes
+    description: ประเภทหวย (Protected)
+  - name: Rounds
+    description: จัดการงวดหวย (Protected)
+  - name: Unused
+    description: API ที่มีใน Backend แต่ไม่ได้ถูกเรียกใช้จาก Frontend
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: access_token
+      description: JWT token ใน httpOnly cookie
+
+  schemas:
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: "Error message"
+
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          example: "admin"
+        password:
+          type: string
+          example: "1234"
+
+    LoginResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        user:
+          type: object
+          properties:
+            id:
+              type: integer
+            username:
+              type: string
+            role:
+              type: string
+              enum: [admin, agent, member]
+
+    RegisterRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+        displayName:
+          type: string
+        phone:
+          type: string
+        lineId:
+          type: string
+        role:
+          type: string
+          enum: [admin, agent, member]
+
+    Settings:
+      type: object
+      properties:
+        isLotteryOpen:
+          type: boolean
+        closingTime:
+          type: string
+          example: "14:30"
+        payRate2Digit:
+          type: number
+          example: 95
+        payRate3Digit:
+          type: number
+          example: 900
+        payRates:
+          type: object
+        autoReverse:
+          type: boolean
+        manualMode:
+          type: boolean
+        minBet:
+          type: number
+          example: 1
+        maxBet2Digit:
+          type: number
+          example: 1000
+        maxBet3Digit:
+          type: number
+          example: 500
+
+    Transaction:
+      type: object
+      properties:
+        id:
+          type: integer
+        bet_type_code:
+          type: string
+          example: "song_bon"
+        bet_type_label:
+          type: string
+          example: "2ตัวบน"
+        number:
+          type: string
+          example: "42"
+        amount:
+          type: number
+          example: 100
+        customer_id:
+          type: integer
+        customer_name:
+          type: string
+          example: "ลูกค้าทั่วไป"
+        user_id:
+          type: integer
+        user_name:
+          type: string
+          example: "ADMIN"
+        created_at:
+          type: string
+
+    TransactionCreate:
+      type: object
+      required: [bet_type_code, number, amount]
+      properties:
+        bet_type_code:
+          type: string
+          example: "song_bon"
+        bet_type_label:
+          type: string
+          example: "2ตัวบน"
+        number:
+          type: string
+          example: "42"
+        amount:
+          type: number
+          example: 100
+        customer_id:
+          type: integer
+        customer_name:
+          type: string
+        user_id:
+          type: integer
+        user_name:
+          type: string
+
+    RestrictedNumber:
+      type: object
+      properties:
+        id:
+          type: integer
+        number:
+          type: string
+          example: "69"
+        maxAmount:
+          type: number
+          example: 500
+        type:
+          type: string
+          example: "2ตัว"
+        lotteryTypeId:
+          type: integer
+
+    RestrictedCreate:
+      type: object
+      required: [number, maxAmount]
+      properties:
+        number:
+          type: string
+        maxAmount:
+          type: number
+        type:
+          type: string
+        lotteryTypeId:
+          type: integer
+
+    BetTypes:
+      type: object
+      properties:
+        digit2:
+          type: array
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+              code:
+                type: string
+              label:
+                type: string
+              shortcut:
+                type: string
+        digit3:
+          type: array
+          items:
+            type: object
+        special:
+          type: array
+          items:
+            type: object
+
+    SummaryData:
+      type: object
+      properties:
+        totalBills:
+          type: number
+        totalAmount:
+          type: number
+        totalCustomers:
+          type: number
+        topNumbers:
+          type: array
+          items:
+            type: object
+
+    Customer:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+          example: "สมชาย"
+        phone:
+          type: string
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        displayName:
+          type: string
+        role:
+          type: string
+          enum: [admin, agent, member]
+        status:
+          type: string
+
+    LotteryType:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+          example: "หวยไทย"
+        code:
+          type: string
+          example: "thai"
+        isOpen:
+          type: boolean
+        openTime:
+          type: string
+          example: "06:00"
+        closeTime:
+          type: string
+          example: "14:30"
+        icon:
+          type: string
+        sortOrder:
+          type: integer
+
+    LotteryTypeCreate:
+      type: object
+      required: [name, code]
+      properties:
+        name:
+          type: string
+        code:
+          type: string
+        openTime:
+          type: string
+          example: "06:00"
+        closeTime:
+          type: string
+          example: "14:30"
+        icon:
+          type: string
+
+    Round:
+      type: object
+      properties:
+        id:
+          type: integer
+        roundNumber:
+          type: integer
+        roundDate:
+          type: string
+          format: date
+        status:
+          type: string
+          enum: [open, closed]
+        lotteryTypeId:
+          type: integer
+        note:
+          type: string
+
+    RoundCreate:
+      type: object
+      required: [roundDate, lotteryTypeId, roundNumber]
+      properties:
+        roundDate:
+          type: string
+          format: date
+        lotteryTypeId:
+          type: integer
+        roundNumber:
+          type: integer
+        note:
+          type: string
+
+paths:
+  # ============================================================
+  # AUTH
+  # ============================================================
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: เข้าสู่ระบบ
+      description: "ใช้ใน: loginPage"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful — ตั้ง httpOnly cookie อัตโนมัติ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Invalid credentials
+
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: สมัครสมาชิก
+      description: "ใช้ใน: registerPage"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Registration successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      username:
+                        type: string
+                      role:
+                        type: string
+        '409':
+          description: Username already exists
+
+  /auth/profile:
+    get:
+      tags: [Auth, Unused]
+      summary: ดึงข้อมูลผู้ใช้ปัจจุบัน
+      description: "⚠️ ไม่ได้ใช้งานจาก Frontend — มี method api.auth.profile() แต่ไม่มีหน้าเรียก"
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Current user profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/User'
+
+  /auth/logout:
+    post:
+      tags: [Auth, Unused]
+      summary: ออกจากระบบ
+      description: "⚠️ ไม่ได้ใช้งานจาก Frontend — มี method api.auth.logout() แต่ไม่มีหน้าเรียก"
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Logout successful — ลบ cookie
+
+  # ============================================================
+  # SETTINGS
+  # ============================================================
+  /settings:
+    get:
+      tags: [Settings]
+      summary: ดึงการตั้งค่าระบบ
+      description: "ใช้ใน: keyPage, settingsPage, lotterySelectPage | Permission: settings.read"
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Settings data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Settings'
+
+    put:
+      tags: [Settings]
+      summary: อัปเดตการตั้งค่า
+      description: "ใช้ใน: settingsPage (toggle, rates, limits, time, reverse, manual) | Permission: settings.write"
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Settings'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+
+  # ============================================================
+  # TRANSACTIONS
+  # ============================================================
+  /transactions:
+    get:
+      tags: [Transactions]
+      summary: ดึงรายการแทงทั้งหมด
+      description: "ใช้ใน: keyPage, summaryPage | Permission: numbers.read"
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: List of transactions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Transaction'
+
+    post:
+      tags: [Transactions]
+      summary: เพิ่มรายการแทง
+      description: "ใช้ใน: keyPage | Permission: numbers.create"
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionCreate'
+      responses:
+        '201':
+          description: Transaction created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Transaction'
+
+    delete:
+      tags: [Transactions, Unused]
+      summary: ลบรายการทั้งหมด (Clear All)
+      description: "⚠️ ไม่ได้ใช้งานจาก Frontend — มี method api.transactions.clear() แต่ไม่มีหน้าเรียก | Permission: numbers.delete"
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: All transactions cleared
+
+  /transactions/{id}:
+    delete:
+      tags: [Transactions]
+      summary: ลบรายการแทงตาม ID
+      description: "ใช้ใน: keyPage | Permission: numbers.delete"
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Transaction deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+
+  # ============================================================
+  # RESTRICTED NUMBERS
+  # ============================================================
+  /restricted:
+    get:
+      tags: [Restricted]
+      summary: ดึงรายการหวยอั้น
+      description: "ใช้ใน: settingsPage | Permission: numbers.read"
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: lotteryTypeId
+          in: query
+          schema:
+            type: integer
+          description: กรองตามประเภทหวย
+      responses:
+        '200':
+          description: List of restricted numbers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RestrictedNumber'
+
+    post:
+      tags: [Restricted]
+      summary: เพิ่มเลขอั้น
+      description: "ใช้ใน: settingsPage | Permission: numbers.create"
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RestrictedCreate'
+      responses:
+        '200':
+          description: Added — returns updated list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RestrictedNumber'
+
+  /restricted/check/{number}:
+    get:
+      tags: [Restricted]
+      summary: ตรวจสอบเลขอั้น
+      description: "ใช้ใน: keyPage | Permission: numbers.read"
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: number
+          in: path
+          required: true
+          schema:
+            type: string
+          description: เลขที่ต้องการตรวจ
+        - name: lotteryTypeId
+          in: query
+          schema:
+            type: integer
+          description: ตรวจภายในประเภทหวย
+      responses:
+        '200':
+          description: Check result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  restricted:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      maxAmount:
+                        type: number
+
+  /restricted/id/{id}:
+    delete:
+      tags: [Restricted]
+      summary: ลบเลขอั้นตาม ID
+      description: "ใช้ใน: settingsPage | Permission: numbers.delete"
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Removed — returns updated list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RestrictedNumber'
+
+  /restricted/{number}:
+    delete:
+      tags: [Restricted, Unused]
+      summary: ลบเลขอั้นตามเลข (Legacy)
+      description: "⚠️ ไม่ได้ใช้งานจาก Frontend — ถูกแทนที่ด้วย DELETE /restricted/id/:id | Permission: numbers.delete"
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: number
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Removed
+
+  # ============================================================
+  # BET TYPES
+  # ============================================================
+  /bet-types:
+    get:
+      tags: [BetTypes]
+      summary: ดึงประเภทแทงทั้งหมด
+      description: "ใช้ใน: keyPage | Permission: numbers.read"
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Bet types categorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/BetTypes'
+
+  # ============================================================
+  # SUMMARY
+  # ============================================================
+  /summary:
+    get:
+      tags: [Summary]
+      summary: ดึงสรุปยอดรวม
+      description: "ใช้ใน: summaryPage | Permission: numbers.read"
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Summary statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/SummaryData'
+
+  # ============================================================
+  # CUSTOMERS
+  # ============================================================
+  /customers:
+    get:
+      tags: [Customers]
+      summary: ดึงรายชื่อลูกค้าทั้งหมด
+      description: "ใช้ใน: keyPage, customerPage | Permission: numbers.read | Note: รายการแรกจะเป็น { id: 0, name: '-- ลูกค้าทั่วไป --' } เสมอ"
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: List of customers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Customer'
+
+    post:
+      tags: [Customers]
+      summary: เพิ่มลูกค้า
+      description: "ใช้ใน: customerPage | Permission: numbers.create"
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  example: "สมชาย"
+                phone:
+                  type: string
+      responses:
+        '201':
+          description: Customer created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Customer'
+
+  /customers/{id}:
+    get:
+      tags: [Customers, Unused]
+      summary: ดึงลูกค้ารายเดี่ยว
+      description: "⚠️ ไม่ได้ใช้งานจาก Frontend — มี route แต่ไม่มี apiClient method | Permission: numbers.read"
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Customer data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Customer'
+
+    patch:
+      tags: [Customers, Unused]
+      summary: อัปเดตข้อมูลลูกค้า
+      description: "⚠️ ไม่ได้ใช้งานจาก Frontend — มี route แต่ไม่มี apiClient method | Permission: numbers.create"
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                phone:
+                  type: string
+      responses:
+        '200':
+          description: Customer updated
+
+    delete:
+      tags: [Customers]
+      summary: ลบลูกค้า
+      description: "ใช้ใน: customerPage | Permission: numbers.delete"
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Customer deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+
+  # ============================================================
+  # USERS
+  # ============================================================
+  /users:
+    get:
+      tags: [Users]
+      summary: ดึงรายชื่อผู้ใช้ทั้งหมด
+      description: "ใช้ใน: usersPage | Permission: users.read"
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User'
+
+    post:
+      tags: [Users]
+      summary: เพิ่มผู้ใช้
+      description: |
+        ใช้ใน: usersPage (api.users.add)
+
+        ⚠️ **BUG:** Frontend เรียก POST /api/users แต่ backend ไม่มี POST route (มีเฉพาะ GET, PATCH, DELETE)
+        ควรเพิ่ม POST route ใน users.routes.js หรือเปลี่ยน frontend ไปใช้ POST /api/auth/register
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username]
+              properties:
+                username:
+                  type: string
+                displayName:
+                  type: string
+                password:
+                  type: string
+                role:
+                  type: string
+                  enum: [admin, agent, member]
+      responses:
+        '201':
+          description: User created
+        '404':
+          description: "⚠️ Route ไม่มีใน backend — จะได้ 404"
+
+  /users/{id}:
+    get:
+      tags: [Users, Unused]
+      summary: ดึงผู้ใช้รายเดี่ยว
+      description: "⚠️ ไม่ได้ใช้งานจาก Frontend — มี route แต่ไม่มี apiClient method | Permission: users.read"
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User data
+
+    patch:
+      tags: [Users, Unused]
+      summary: อัปเดตข้อมูลผู้ใช้
+      description: "⚠️ ไม่ได้ใช้งานจาก Frontend — มี route แต่ไม่มี apiClient method | Permission: users.create"
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: User updated
+
+    delete:
+      tags: [Users]
+      summary: ลบผู้ใช้
+      description: "ใช้ใน: usersPage | Permission: users.delete"
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+
+  # ============================================================
+  # LOTTERY TYPES
+  # ============================================================
+  /lottery-types:
+    get:
+      tags: [LotteryTypes]
+      summary: ดึงประเภทหวยทั้งหมด
+      description: "ใช้ใน: settingsPage, lotterySelectPage"
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: List of lottery types sorted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/LotteryType'
+
+    post:
+      tags: [LotteryTypes]
+      summary: เพิ่มประเภทหวย
+      description: "ใช้ใน: settingsPage"
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LotteryTypeCreate'
+      responses:
+        '201':
+          description: Lottery type created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/LotteryType'
+
+  /lottery-types/check/{code}:
+    get:
+      tags: [LotteryTypes]
+      summary: ตรวจสอบประเภทหวย (เปิด/ปิด)
+      description: "ใช้ใน: keyPage"
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+          description: "รหัสประเภทหวย เช่น 'thai', 'laos'"
+      responses:
+        '200':
+          description: Check result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      exists:
+                        type: boolean
+                      isOpen:
+                        type: boolean
+                      name:
+                        type: string
+                      closeTime:
+                        type: string
+
+  /lottery-types/{id}:
+    patch:
+      tags: [LotteryTypes]
+      summary: อัปเดตประเภทหวย
+      description: "ใช้ใน: settingsPage (toggle เปิด/ปิด, แก้เวลา)"
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                isOpen:
+                  type: boolean
+                openTime:
+                  type: string
+                closeTime:
+                  type: string
+      responses:
+        '200':
+          description: Lottery type updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/LotteryType'
+
+    delete:
+      tags: [LotteryTypes]
+      summary: ลบประเภทหวย
+      description: "ใช้ใน: settingsPage"
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Deleted"
+
+  /lottery-types/{id}/logs:
+    get:
+      tags: [LotteryTypes]
+      summary: ดึงประวัติการเปลี่ยนแปลง
+      description: "ใช้ใน: settingsPage"
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Change logs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        action:
+                          type: string
+                        changes:
+                          type: object
+                        createdAt:
+                          type: string
+
+  # ============================================================
+  # ROUNDS
+  # ============================================================
+  /rounds:
+    get:
+      tags: [Rounds]
+      summary: ดึงงวดหวยทั้งหมด
+      description: "ใช้ใน: settingsPage"
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: lotteryTypeId
+          in: query
+          schema:
+            type: integer
+          description: กรองตามประเภทหวย
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [open, closed]
+          description: กรองตามสถานะ
+      responses:
+        '200':
+          description: List of rounds
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Round'
+
+    post:
+      tags: [Rounds]
+      summary: สร้างงวดใหม่
+      description: "ใช้ใน: settingsPage"
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoundCreate'
+      responses:
+        '201':
+          description: Round created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Round'
+
+  /rounds/open:
+    get:
+      tags: [Rounds]
+      summary: ดึงงวดที่เปิดอยู่
+      description: "ใช้ใน: lotterySelectPage"
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Open rounds
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Round'
+
+  /rounds/next-number/{lotteryTypeId}:
+    get:
+      tags: [Rounds]
+      summary: ดึงเลขงวดถัดไป
+      description: "ใช้ใน: settingsPage"
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: lotteryTypeId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Next round number
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      next:
+                        type: integer
+                      hasRounds:
+                        type: boolean
+
+  /rounds/{id}:
+    get:
+      tags: [Rounds, Unused]
+      summary: ดึงงวดเดี่ยว
+      description: "⚠️ ไม่ได้ใช้งานจาก Frontend — มี method api.rounds.getById() แต่ไม่มีหน้าเรียก"
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Round data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Round'
+
+    patch:
+      tags: [Rounds]
+      summary: อัปเดตงวด (ปิด/เปิดซ้ำ)
+      description: "ใช้ใน: settingsPage (close/reopen round)"
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [open, closed]
+                note:
+                  type: string
+      responses:
+        '200':
+          description: Round updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Round'
+
+    delete:
+      tags: [Rounds]
+      summary: ลบงวด
+      description: "ใช้ใน: settingsPage (ลบได้เฉพาะงวดที่ไม่มีรายการ)"
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Round deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Deleted"
+
+  /rounds/{id}/report:
+    get:
+      tags: [Rounds, Unused]
+      summary: ดึงรายงานงวด
+      description: "⚠️ ไม่ได้ใช้งานจาก Frontend — มี method api.rounds.getReport() แต่ไม่มีหน้าเรียก"
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Round report with transactions
+
+  /rounds/bulk:
+    post:
+      tags: [Rounds, Unused]
+      summary: สร้างงวดหลายรายการพร้อมกัน
+      description: "⚠️ ไม่ได้ใช้งานจาก Frontend — มี method api.rounds.addBulk() แต่ไม่มีหน้าเรียก"
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '201':
+          description: Rounds created

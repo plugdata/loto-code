@@ -8,3 +8,4 @@ export const ROLE_PERMISSIONS = {
     member: ['numbers.read', 'numbers.create'],
     customer: ['numbers.read'],
 };
+

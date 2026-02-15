@@ -39,12 +39,24 @@ lotteryTypes.post('/', async (c) => {
   }
 });
 
+// GET /api/lottery-types/:id/logs — get change logs
+lotteryTypes.get('/:id/logs', async (c) => {
+  try {
+    const id = parseInt(c.req.param('id'));
+    const data = await lotteryTypesService.getLogs(id);
+    return c.json({ success: true, data });
+  } catch (err) {
+    return c.json({ success: false, message: err.message }, err.status || 500);
+  }
+});
+
 // PATCH /api/lottery-types/:id — update
 lotteryTypes.patch('/:id', async (c) => {
   try {
     const id = parseInt(c.req.param('id'));
     const body = await c.req.json();
-    const data = await lotteryTypesService.update(id, body);
+    const user = c.get('user');
+    const data = await lotteryTypesService.update(id, body, user);
     return c.json({ success: true, data });
   } catch (err) {
     return c.json({ success: false, message: err.message }, err.status || 500);
